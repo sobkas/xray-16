@@ -20,7 +20,7 @@ Build-Depends:
  libncurses5-dev,
  gcc-10,
  libpcre3-dev,
- libsdl2-dev,
+ libsdl3-dev,
  g++-10,
  debhelper,
 Build-Conflicts:

@@ -12,7 +12,7 @@
 #include "IGame_Level.h"
 #include "IGame_Persistent.h"
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 ENGINE_API CRenderDevice Device;
 ENGINE_API CLoadScreenRenderer load_screen_renderer;
@@ -346,73 +346,58 @@ void CRenderDevice::ProcessFrame()
 void CRenderDevice::ProcessEvent(const SDL_Event& event)
 {
     ZoneScoped;
+    SDL_Window* window = nullptr;
+    ImGuiViewport* viewport = nullptr;
 
     switch (event.type)
     {
-#if SDL_VERSION_ATLEAST(2, 0, 9)
-    case SDL_DISPLAYEVENT:
-    {
-        switch (event.display.type)
-        {
-        case SDL_DISPLAYEVENT_ORIENTATION:
-#if SDL_VERSION_ATLEAST(2, 0, 14)
-        case SDL_DISPLAYEVENT_CONNECTED:
-        case SDL_DISPLAYEVENT_DISCONNECTED:
-#endif
+        case SDL_EVENT_DISPLAY_ORIENTATION:
+
+        case SDL_EVENT_DISPLAY_ADDED:
+        case SDL_EVENT_DISPLAY_REMOVED:
             CleanupVideoModes();
             FillVideoModes();
-#if SDL_VERSION_ATLEAST(2, 0, 14)
-            if (event.display.display == psDeviceMode.Monitor && event.display.type != SDL_DISPLAYEVENT_CONNECTED)
-#else
-            if (event.display.display == psDeviceMode.Monitor)
-#endif
+            if (event.display.displayID == psDeviceMode.Monitor && event.display.type != SDL_EVENT_DISPLAY_ADDED)
                 Reset();
             else
                 UpdateWindowProps();
             break;
-        } // switch (event.display.type)
-        break;
-    }
-#endif
-    case SDL_WINDOWEVENT:
-    {
-        const auto window = SDL_GetWindowFromID(event.window.windowID);
-        if (!window)
-            break;
-        ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(window);
-        if (!viewport)
-            break;
 
-        switch (event.window.event)
+        case SDL_EVENT_WINDOW_MOVED:
         {
-        case SDL_WINDOWEVENT_MOVED:
-        {
+            window = SDL_GetWindowFromID(event.window.windowID);
+            if (!window)
+                break;
+            viewport = ImGui::FindViewportByPlatformHandle(window);
+            if (!viewport)
+                break;
             if (window == m_sdlWnd)
             {
                 UpdateWindowRects();
-#if !SDL_VERSION_ATLEAST(2, 0, 18) // without SDL_WINDOWEVENT_DISPLAY_CHANGED, let's detect monitor change ourselves
-                const int display = SDL_GetWindowDisplayIndex(window);
+                const int display = SDL_GetDisplayForWindow(window);
                 if (display != -1)
                     psDeviceMode.Monitor = display;
-#endif
             }
             if (viewport)
                 viewport->PlatformRequestMove = true;
             break;
         }
 
-#if SDL_VERSION_ATLEAST(2, 0, 18)
-        case SDL_WINDOWEVENT_DISPLAY_CHANGED:
+        case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
             psDeviceMode.Monitor = event.window.data1;
             break;
-#endif
 
-        case SDL_WINDOWEVENT_RESIZED:
-            if (viewport)
-                viewport->PlatformRequestResize = true;
+        case SDL_EVENT_WINDOW_RESIZED:
+            window = SDL_GetWindowFromID(event.window.windowID);
+            if (!window)
+                break;
+            viewport = ImGui::FindViewportByPlatformHandle(window);
+            if (!viewport)
+                break;
+            viewport->PlatformRequestResize = true;
             break;
 
-        case SDL_WINDOWEVENT_SIZE_CHANGED:
+        case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
         {
             if (psDeviceMode.WindowStyle != rsFullscreen)
             {
@@ -431,10 +416,16 @@ void CRenderDevice::ProcessEvent(const SDL_Event& event)
             break;
         }
 
-        case SDL_WINDOWEVENT_CLOSE:
+        case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
         {
-            if (viewport)
-                viewport->PlatformRequestClose = true;
+            window = SDL_GetWindowFromID(event.window.windowID);
+            if (!window)
+                break;
+            viewport = ImGui::FindViewportByPlatformHandle(window);
+            if (!viewport)
+                break;
+
+            viewport->PlatformRequestClose = true;
 
             if (window == m_sdlWnd)
             {
@@ -443,8 +434,7 @@ void CRenderDevice::ProcessEvent(const SDL_Event& event)
             }
             break;
         }
-        } // switch (event.window.event)
-    }
+
     } // switch (event.type)
 
     editor().ProcessEvent(event);
