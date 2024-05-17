@@ -5,6 +5,8 @@
 #pragma hdrstop
 
 #include "glHW.h"
+#include <epoxy/gl.h>
+//#include <epoxy/glx.h>
 #include "xrEngine/XR_IOConsole.h"
 
 CHW HW;
@@ -135,23 +137,10 @@ void CHW::CreateDevice(SDL_Window* hWnd)
         return;
     }
 
-    // Initialize OpenGL Extension Wrangler
-#ifdef XR_PLATFORM_APPLE
-    // This is essential for complete OpenGL 4.1 load on mac
-    glewExperimental = GL_TRUE;
-#endif
-#if 1
-    GLenum err = glewInit();
-    if (GLEW_OK != err && GLEW_ERROR_NO_GLX_DISPLAY != err)
-    {
-        Log("! Could not initialize glew:", (pcstr)glewGetErrorString(err));
-        return;
-    }
-#endif
     UpdateVSync();
 
-#if 1
-    if (GLEW_KHR_debug)  // NOTE: this extension is only available starting with OpenGL 4.3
+#ifdef DEBUG
+    if (epoxy_has_gl_extension("GL_KHR_debug"))  // NOTE: this extension is only available starting with OpenGL 4.3
     {
         CHK_GL(glEnable(GL_DEBUG_OUTPUT));
         CHK_GL(glDebugMessageCallback((GLDEBUGPROC)OnDebugCallback, nullptr));
@@ -174,8 +163,8 @@ void CHW::CreateDevice(SDL_Window* hWnd)
     Msg("* GPU OpenGL shading language version: %s", ShadingVersion);
     Msg("* GPU OpenGL VTF units: [%d] CTI units: [%d]", iMaxVTFUnits, iMaxCTIUnits);
 
-    SeparateShaderObjectsSupported = GLEW_ARB_separate_shader_objects;
-    ShaderBinarySupported = GLEW_ARB_get_program_binary;
+    SeparateShaderObjectsSupported = epoxy_has_gl_extension("GL_ARB_separate_shader_objects");
+    ShaderBinarySupported = epoxy_has_gl_extension("GL_ARB_get_program_binary");
     ComputeShadersSupported = false; // XXX: Implement compute shaders support
 
     Caps.fTarget = D3DFMT_A8R8G8B8;
@@ -310,12 +299,12 @@ bool CHW::ThisInstanceIsGlobal() const
 
 void CHW::BeginPixEvent(pcstr name) const
 {
-    if (GLEW_KHR_debug)
+    if (epoxy_has_gl_extension("GL_KHR_debug"))
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
 }
 
 void CHW::EndPixEvent() const
 {
-    if (GLEW_KHR_debug)
+    if (epoxy_has_gl_extension("GL_KHR_debug"))
         glPopDebugGroup();
 }

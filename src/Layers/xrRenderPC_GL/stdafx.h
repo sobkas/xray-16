@@ -14,8 +14,7 @@
 
 #include "xrParticles/psystem.h"
 
-#define GLEW_STATIC
-#include <GL/glew.h>
+#include <epoxy/gl.h>
 #include <SDL3/SDL_opengl.h>
 #include <SDL3/SDL_opengl_glext.h>
 

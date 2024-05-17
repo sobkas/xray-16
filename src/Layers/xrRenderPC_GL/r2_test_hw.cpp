@@ -56,17 +56,6 @@ BOOL xrRender_test_hw()
     const sdl_window_test_helper windowTest;
     if (!windowTest.successful())
         return FALSE;
-#if 1
-    GLenum err;
-    {
-        ZoneScopedN("glewInit()");
-        err = glewInit();
-    }
-    if (GLEW_OK != err && GLEW_ERROR_NO_GLX_DISPLAY != err)
-    {
-        Log("~ Could not initialize glew:", (pcstr)glewGetErrorString(err));
-        return FALSE;
-    }
-#endif
+
     return TRUE;
 }
