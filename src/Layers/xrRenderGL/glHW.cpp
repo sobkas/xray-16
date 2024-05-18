@@ -139,8 +139,10 @@ void CHW::CreateDevice(SDL_Window* hWnd)
 
     UpdateVSync();
 
+    GLKHRdebugSupported = epoxy_has_gl_extension("GL_KHR_debug");
+
 #ifdef DEBUG
-    if (epoxy_has_gl_extension("GL_KHR_debug"))  // NOTE: this extension is only available starting with OpenGL 4.3
+    if (GLKHRdebugSupported)  // NOTE: this extension is only available starting with OpenGL 4.3
     {
         CHK_GL(glEnable(GL_DEBUG_OUTPUT));
         CHK_GL(glDebugMessageCallback((GLDEBUGPROC)OnDebugCallback, nullptr));
@@ -166,6 +168,7 @@ void CHW::CreateDevice(SDL_Window* hWnd)
     SeparateShaderObjectsSupported = epoxy_has_gl_extension("GL_ARB_separate_shader_objects");
     ShaderBinarySupported = epoxy_has_gl_extension("GL_ARB_get_program_binary");
     ComputeShadersSupported = false; // XXX: Implement compute shaders support
+    GLARBvertexattribbindingSupported = epoxy_has_gl_extension("GL_ARB_vertex_attrib_binding");
 
     Caps.fTarget = D3DFMT_A8R8G8B8;
     Caps.fDepth = D3DFMT_D24S8;
@@ -299,12 +302,12 @@ bool CHW::ThisInstanceIsGlobal() const
 
 void CHW::BeginPixEvent(pcstr name) const
 {
-    if (epoxy_has_gl_extension("GL_KHR_debug"))
+    if (GLKHRdebugSupported)
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
 }
 
 void CHW::EndPixEvent() const
 {
-    if (epoxy_has_gl_extension("GL_KHR_debug"))
+    if (GLKHRdebugSupported)
         glPopDebugGroup();
 }
